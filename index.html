@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>ডিউটি স্লিপ ম্যানেজার - প্রো ভার্সন</title>
+    <style>
+        :root { --primary-color: #0056b3; --secondary-color: #6c757d; --success-color: #28a745; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #eef2f7; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 8px solid var(--primary-color); }
+        
+        .header { text-align: center; margin-bottom: 30px; position: relative; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        #dispLogo { max-height: 85px; display: none; }
+        #dispSchoolName { color: var(--primary-color); font-size: 32px; margin: 0; font-weight: 800; }
+        #dispAddress { font-size: 16px; color: #666; margin-top: 5px; font-weight: bold; }
+        
+        .settings-btn { position: absolute; right: 0; top: 0; background: var(--secondary-color); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .settings-panel { display: none; background: #fffcf0; border: 2px solid #ffe082; padding: 25px; border-radius: 12px; margin-bottom: 25px; }
+
+        .input-box { display: flex; flex-wrap: wrap; gap: 15px; background: #f0f4f8; padding: 25px; border-radius: 12px; align-items: flex-end; margin-bottom: 30px; border: 1px solid #d1d9e6; }
+        .input-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+        
+        label { font-weight: 700; margin-bottom: 8px; color: #444; font-size: 14px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: var(--primary-color); color: white; padding: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #dee2e6; text-align: center; background: #fff; }
+
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; transition: 0.3s; }
+        .btn-add { background: var(--success-color); color: white; }
+        .btn-print { background: #fd7e14; color: white; float: right; margin-bottom: 15px; }
+        .btn-backup { background: #673ab7; color: white; margin-right: 10px; }
+
+        /* প্রিন্ট ডিজাইন */
+        .teacher-slip { display: none; }
+        @media print {
+            .container, .input-box, .btn-print, .settings-btn, .settings-panel, h2, #main-table { display: none !important; }
+            .teacher-slip { 
+                display: block; page-break-after: always; padding: 30px; color: black; 
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+            }
+            .slip-head { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+            .slip-logo { max-height: 80px; }
+            .school-title { font-size: 28px; font-weight: bold; color: #0056b3 !important; margin: 0; }
+            .school-address { font-size: 14px; color: #333 !important; margin-top: 3px; }
+            .slip-title { font-size: 18px; border: 2px solid #0056b3; color: #0056b3 !important; display: inline-block; padding: 3px 15px; margin: 10px 0; font-weight: bold; border-radius: 4px; background: #f0f7ff !important; }
+            .exam-details-text { font-size: 15px; color: #000 !important; font-weight: bold; margin-bottom: 10px; }
+            .teacher-info-area { font-size: 18px; line-height: 1.6; margin-bottom: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 5px; }
+            .slip-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .slip-table th { background-color: #0056b3 !important; color: white !important; border: 1px solid #0056b3; padding: 8px; font-size: 16px; }
+            .slip-table td { border: 1px solid #ccc; font-size: 16px; padding: 8px; }
+            .footer { margin-top: 70px; display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; }
+            .footer p { border-top: 1px solid #000; padding-top: 5px; width: 180px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <img id="dispLogo" src="" alt="Logo">
+        <div>
+            <h1 id="dispSchoolName">লোডিং...</h1>
+            <div id="dispAddress"></div>
+            <div id="dispExamInfo" style="margin-top:10px; font-weight:bold; color:#0056b3;"></div>
+        </div>
+        <button class="settings-btn" onclick="openSettings()">⚙️ সেটিংস ও ব্যাকআপ</button>
+    </div>
+
+    <div id="settingsArea" class="settings-panel">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <label>স্কুল/কলেজ লোগো আপলোড:</label>
+                <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(this)" style="width:100%; margin-bottom:15px;">
+                <label>প্রতিষ্ঠানের নাম:</label>
+                <input type="text" id="schoolNameInput" style="width: 100%; margin-bottom: 10px;">
+                <label>প্রতিষ্ঠানের ঠিকানা:</label>
+                <input type="text" id="addressInput" placeholder="উদা: ঢাকা, বাংলাদেশ" style="width: 100%; margin-bottom: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label>পরীক্ষার নাম:</label><input type="text" id="examNameInput"></div>
+                    <div><label>শ্রেণি:</label><input type="text" id="classNameInput"></div>
+                    <div><label>সেশন:</label><input type="text" id="sessionInput"></div>
+                    <div><label>গ্রুপ:</label><input type="text" id="groupInput"></div>
+                </div>
+            </div>
+            <div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label>শিক্ষকের নাম তালিকা:</label><textarea id="namesListInput" rows="2" style="width:100%"></textarea></div>
+                    <div><label>পদবী তালিকা:</label><textarea id="ranksListInput" rows="2" style="width:100%"></textarea></div>
+                    <div><label>বিষয় তালিকা:</label><textarea id="subsListInput" rows="2" style="width:100%"></textarea></div>
+                    <div><label>প্রতিষ্ঠানের তালিকা:</label><textarea id="instsListInput" rows="2" style="width:100%"></textarea></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><label>রুটিন (তারিখ ও বিষয়):</label><textarea id="routineInput" rows="4" style="width: 100%;"></textarea></div>
+                    <div><label>সময়/শিফট:</label><textarea id="shiftInput" rows="4" style="width: 100%;"></textarea></div>
+                </div>
+                <label style="margin-top:10px; display:block;">স্বাক্ষরকারীর পদবী:</label>
+                <input type="text" id="signatureInput" style="width:100%; margin-bottom:10px;">
+                <label style="color:red;">নতুন পাসওয়ার্ড সেট করুন:</label>
+                <input type="password" id="newPassInput" placeholder="পাসওয়ার্ড বদলাতে এখানে লিখুন">
+            </div>
+        </div>
+        <div style="margin-top: 20px; border-top: 2px solid #ffe082; padding-top: 15px; display: flex; justify-content: space-between;">
+            <div>
+                <button class="btn btn-backup" onclick="exportData()">📤 ব্যাকআপ ফাইল</button>
+                <button class="btn btn-backup" onclick="document.getElementById('importFile').click()" style="background:#009688;">📥 রিস্টোর ফাইল</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(this)">
+            </div>
+            <button class="btn btn-add" onclick="saveSettings()" style="background: var(--primary-color);">তথ্য সেভ করুন</button>
+        </div>
+    </div>
+
+    <button class="btn btn-print" onclick="window.print()">🖨️ স্লিপ প্রিন্ট করুন</button>
+
+    <div class="input-box">
+        <div class="input-group"><label>তারিখ ও বিষয়:</label><select id="dateSubSel"></select></div>
+        <div class="input-group"><label>সময়:</label><select id="shiftSel"></select></div>
+        <div class="input-group"><label>শিক্ষক:</label><select id="nameSel"></select></div>
+        <div class="input-group"><label>পদবী:</label><select id="rankSel"></select></div>
+        <div class="input-group"><label>বিষয়:</label><select id="subSel"></select></div>
+        <div class="input-group"><label>প্রতিষ্ঠান:</label><select id="instSel"></select></div>
+        <button class="btn btn-add" onclick="addDuty()">➕ স্লিপে যোগ করুন</button>
+    </div>
+
+    <table id="main-table">
+        <thead><tr><th>তারিখ ও বিষয়</th><th>সময়</th><th>শিক্ষক</th><th>পদবী</th><th>অ্যাকশন</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+    let dutyRecords = [];
+
+    window.onload = function() {
+        if (!localStorage.getItem('ADMIN_PASS')) {
+            let pass = prompt("নিরাপত্তার জন্য একটি নতুন অ্যাডমিন পাসওয়ার্ড সেট করুন:", "1234");
+            localStorage.setItem('ADMIN_PASS', pass || "1234");
+            localStorage.setItem('S_NAME', "আপনার প্রতিষ্ঠানের নাম");
+            localStorage.setItem('S_ADDR', "প্রতিষ্ঠানের ঠিকানা এখানে");
+            localStorage.setItem('SIGN_TEXT', "প্রধান শিক্ষক");
+        }
+        loadData();
+    };
+
+    function openSettings() {
+        let enteredPass = prompt("সেটিংস খুলতে পাসওয়ার্ড দিন:");
+        if (enteredPass === localStorage.getItem('ADMIN_PASS')) {
+            const el = document.getElementById('settingsArea');
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        } else { alert("ভুল পাসওয়ার্ড!"); }
+    }
+
+    function handleLogo(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                localStorage.setItem('S_LOGO', e.target.result);
+                document.getElementById('dispLogo').src = e.target.result;
+                document.getElementById('dispLogo').style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function saveSettings() {
+        localStorage.setItem('S_NAME', document.getElementById('schoolNameInput').value);
+        localStorage.setItem('S_ADDR', document.getElementById('addressInput').value);
+        localStorage.setItem('EX_NAME', document.getElementById('examNameInput').value);
+        localStorage.setItem('CL_NAME', document.getElementById('classNameInput').value);
+        localStorage.setItem('SESS', document.getElementById('sessionInput').value);
+        localStorage.setItem('GRP', document.getElementById('groupInput').value);
+        localStorage.setItem('SIGN_TEXT', document.getElementById('signatureInput').value);
+        
+        localStorage.setItem('L_NAMES', document.getElementById('namesListInput').value);
+        localStorage.setItem('L_RANKS', document.getElementById('ranksListInput').value);
+        localStorage.setItem('L_SUBS', document.getElementById('subsListInput').value);
+        localStorage.setItem('L_INSTS', document.getElementById('instsListInput').value);
+        
+        localStorage.setItem('R_LIST', document.getElementById('routineInput').value);
+        localStorage.setItem('TIME_LIST', document.getElementById('shiftInput').value);
+        
+        let newPass = document.getElementById('newPassInput').value;
+        if(newPass.trim() !== "") localStorage.setItem('ADMIN_PASS', newPass);
+        
+        alert("সব তথ্য সফলভাবে সেভ হয়েছে!");
+        location.reload();
+    }
+
+    function loadData() {
+        const logo = localStorage.getItem('S_LOGO');
+        if(logo) { document.getElementById('dispLogo').src = logo; document.getElementById('dispLogo').style.display = 'block'; }
+        
+        document.getElementById('dispSchoolName').innerText = localStorage.getItem('S_NAME');
+        document.getElementById('dispAddress').innerText = localStorage.getItem('S_ADDR');
+        
+        const ex = localStorage.getItem('EX_NAME')||"", cl = localStorage.getItem('CL_NAME')||"", se = localStorage.getItem('SESS')||"", gr = localStorage.getItem('GRP')||"";
+        document.getElementById('dispExamInfo').innerText = [ex, cl?"শ্রেণি: "+cl:"", se?"সেশন: "+se:"", gr?"গ্রুপ: "+gr:""].filter(x=>x).join(" | ");
+
+        document.getElementById('schoolNameInput').value = localStorage.getItem('S_NAME');
+        document.getElementById('addressInput').value = localStorage.getItem('S_ADDR');
+        document.getElementById('examNameInput').value = ex; document.getElementById('classNameInput').value = cl;
+        document.getElementById('sessionInput').value = se; document.getElementById('groupInput').value = gr;
+        document.getElementById('signatureInput').value = localStorage.getItem('SIGN_TEXT');
+        
+        document.getElementById('namesListInput').value = localStorage.getItem('L_NAMES')||"";
+        document.getElementById('ranksListInput').value = localStorage.getItem('L_RANKS')||"";
+        document.getElementById('subsListInput').value = localStorage.getItem('L_SUBS')||"";
+        document.getElementById('instsListInput').value = localStorage.getItem('L_INSTS')||"";
+        
+        document.getElementById('routineInput').value = localStorage.getItem('R_LIST')||"";
+        document.getElementById('shiftInput').value = localStorage.getItem('TIME_LIST')||"";
+
+        fillSelect('nameSel', localStorage.getItem('L_NAMES')||"", '--নাম--');
+        fillSelect('rankSel', localStorage.getItem('L_RANKS')||"", '--পদবী--');
+        fillSelect('subSel', localStorage.getItem('L_SUBS')||"", '--বিষয়--');
+        fillSelect('instSel', localStorage.getItem('L_INSTS')||"", '--প্রতিষ্ঠান--');
+        fillSelect('dateSubSel', localStorage.getItem('R_LIST')||"", '--তারিখ ও বিষয়--');
+        fillSelect('shiftSel', localStorage.getItem('TIME_LIST')||"", '--সময়--');
+    }
+
+    function fillSelect(id, data, def) {
+        const s = document.getElementById(id);
+        s.innerHTML = `<option value="">${def}</option>`;
+        data.split('\n').forEach(l => { if(l.trim()) s.innerHTML += `<option value="${l.trim()}">${l.trim()}</option>`; });
+    }
+
+    function addDuty() {
+        const ds = document.getElementById('dateSubSel').value, 
+              sh = document.getElementById('shiftSel').value, 
+              nm = document.getElementById('nameSel').value,
+              rk = document.getElementById('rankSel').value,
+              sb = document.getElementById('subSel').value,
+              it = document.getElementById('instSel').value;
+              
+        if(!ds || !sh || !nm) return alert("দয়া করে তারিখ, সময় এবং শিক্ষকের নাম সিলেক্ট করুন!");
+        
+        dutyRecords.push({ ds, sh, tName: nm, tRank: rk, tSub: sb, tInst: it });
+        renderTable();
+    }
+
+    function renderTable() {
+        document.getElementById('tableBody').innerHTML = dutyRecords.map((d, i) => `<tr><td>${d.ds}</td><td>${d.sh}</td><td>${d.tName}</td><td>${d.tRank}</td><td><button onclick="dutyRecords.splice(${i},1);renderTable();" style="background:#ff4d4d; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">❌</button></td></tr>`).join('');
+        const printArea = document.getElementById('print-area'); printArea.innerHTML = "";
+        const groups = {};
+        
+        // গ্রুপিং বাই নাম ও পদবী (একই শিক্ষকের সব ডিউটি এক স্লিপে আনার জন্য)
+        dutyRecords.forEach(r => { 
+            const key = r.tName + (r.tRank || "");
+            if(!groups[key]) groups[key] = []; 
+            groups[key].push(r); 
+        });
+        
+        const logoSrc = localStorage.getItem('S_LOGO');
+        const signText = localStorage.getItem('SIGN_TEXT') || "";
+        const sAddr = localStorage.getItem('S_ADDR');
+        const sName = localStorage.getItem('S_NAME');
+
+        for(let k in groups) {
+            const t = groups[k][0];
+            const info = [localStorage.getItem('EX_NAME'), localStorage.getItem('CL_NAME')?"শ্রেণি: "+localStorage.getItem('CL_NAME'):"", localStorage.getItem('SESS')?"সেশন: "+localStorage.getItem('SESS'):"", localStorage.getItem('GRP')?"গ্রুপ: "+localStorage.getItem('GRP'):""].filter(x=>x).join(" | ");
+            let slip = `
+                <div class="teacher-slip">
+                    <div class="slip-head">
+                        ${logoSrc ? `<img src="${logoSrc}" class="slip-logo">` : ''}
+                        <div>
+                            <div class="school-title">${sName}</div>
+                            <div class="school-address">${sAddr}</div>
+                            <div class="slip-title">পরীক্ষার ডিউটি স্লিপ</div>
+                            <div class="exam-details-text">${info}</div>
+                        </div>
+                    </div>
+                    <div class="teacher-info-area">
+                        শিক্ষকের নাম: <b>${t.tName}</b> <br>
+                        পদবী: ${t.tRank || "............"} | বিষয়: ${t.tSub || "............"}<br>
+                        প্রতিষ্ঠান: ${t.tInst || sName}
+                    </div>
+                    <table class="slip-table">
+                        <thead><tr><th>ক্রঃ</th><th>তারিখ ও বিষয়</th><th>সময়</th></tr></thead>
+                        <tbody>${groups[k].map((item, idx) => `<tr><td align="center">${idx+1}</td><td align="center">${item.ds}</td><td align="center">${item.sh}</td></tr>`).join('')}</tbody>
+                    </table>
+                    <div class="footer"><p>শিক্ষকের স্বাক্ষর</p><p>${signText}</p></div>
+                </div>`;
+            printArea.innerHTML += slip;
+        }
+    }
+
+    function exportData() {
+        const data = JSON.stringify(localStorage);
+        const blob = new Blob([data], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'College_Duty_System_Backup.json';
+        a.click();
+    }
+
+    function importData(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+                alert("রিস্টোর সফল! পেজ রিলোড হচ্ছে...");
+                location.reload();
+            };
+            reader.readAsText(file);
+        }
+    }
+</script>
+</body>
+</html>
