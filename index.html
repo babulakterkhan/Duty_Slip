@@ -280,6 +280,8 @@
                         <thead><tr><th>ক্রঃ</th><th>তারিখ ও বিষয়</th><th>সময়</th></tr></thead>
                         <tbody>${groups[k].map((item, idx) => `<tr><td align="center">${idx+1}</td><td align="center">${item.ds}</td><td align="center">${item.sh}</td></tr>`).join('')}</tbody>
                     </table>
+<p>বিশেষ দ্রষ্ট্ব্যঃ</p>
+ <p>আপনাকে পরীক্ষা শুরু হওয়ার ৩০ মিনিট পূর্বে কেন্দ্রে উপস্থিত হওয়ার জন্য অনুরোধ করা হলো।</p>
                     <div class="footer"><p>শিক্ষকের স্বাক্ষর</p><p>${signText}</p></div>
                 </div>`;
             printArea.innerHTML += slip;
